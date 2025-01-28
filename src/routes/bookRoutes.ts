@@ -8,10 +8,22 @@ const router: Router = express.Router();
  */
 router.get('/', async (req: Request, res: Response) => {
     try {
-        const bookList = await Book.find();
-        return res.status(200).json(bookList)
+        const page = parseInt( req.query.page as string) || 1;
+        const limit = parseInt(req.query.limit as string) || 10;
+
+        const skip = (page - 1) * limit; //how many items do I want to skip
+
+        const bookList = await Book.find().skip(skip).limit(limit);
+        const totalBooks = await Book.countDocuments();
+
+        return res.status(200).json({
+            totalBooks,
+            currentPage: page,
+            totalPages: Math.ceil(totalBooks / limit),
+            books: bookList
+        })
     } catch (error) {
-        return res.status(500).json({message: "unable to connect to fetch books "})
+        return res.status(500).json({message: "unable to connect to fetch books"})
     }
 });
 
@@ -21,7 +33,7 @@ router.get('/', async (req: Request, res: Response) => {
 
 router.get('/:isbn', async (req: Request, res: Response) => {
     const isbn = req.params.isbn;
-    //:TODO maybe I will need to validate the ISBN in future?
+    //:TODO maybe I will need to validate the ISBN?
     try {
         const book = await Book.findOne({isbn})
         if (!book) {
@@ -85,6 +97,25 @@ router.post('/', async (req: Request, res: Response) => {
     } catch (error) {
         return res.status(500).json({message: "unable to connect to the DB"})
     }
+})
+
+/**
+ * delete a book
+ */
+router.delete('/:isbn', async (req: Request, res: Response) => {
+    const isbn = req.params.isbn;
+
+    try {
+        const book = Book.findOneAndDelete({isbn: isbn});
+        if (!book) {
+            return res.status(404).json({message: `Book with isbn ${isbn} was not found`})
+        }
+        return res.status(200).json("book deleted successfully")
+
+    } catch (error) {
+        return res.status(500).json({message: "unable to connect to the db"})
+    }
+
 })
 
 

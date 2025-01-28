@@ -11,8 +11,17 @@ const router = express_1.default.Router();
  */
 router.get('/', async (req, res) => {
     try {
-        const bookList = await Book_1.Book.find();
-        return res.status(200).json(bookList);
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 10;
+        const skip = (page - 1) * limit; //how many items do I want to skip
+        const bookList = await Book_1.Book.find().skip(skip).limit(limit);
+        const totalBooks = await Book_1.Book.countDocuments();
+        return res.status(200).json({
+            totalBooks,
+            currentPage: page,
+            totalPages: Math.ceil(totalBooks / limit),
+            books: bookList
+        });
     }
     catch (error) {
         return res.status(500).json({ message: "unable to connect to fetch books " });
@@ -23,7 +32,7 @@ router.get('/', async (req, res) => {
  */
 router.get('/:isbn', async (req, res) => {
     const isbn = req.params.isbn;
-    //:TODO maybe I will need to validate the ISBN in future?
+    //:TODO maybe I will need to validate the ISBN?
     try {
         const book = await Book_1.Book.findOne({ isbn });
         if (!book) {
@@ -51,7 +60,8 @@ router.put('/:isbn', async (req, res) => {
             return res.status(400).json({ message: "All required fields must be provided" });
         }
         const updatedBook = await Book_1.Book.updateOne({ isbn: book.isbn }, { $set: { title, subtitle, isbn, author, numPages, publisher, price, cover } });
-        return res.status(200).json(updatedBook);
+        //:TODO maybe fetch the book that's just been updated
+        return res.status(200).json({ message: "Updated successful", data: updatedBook });
     }
     catch (error) {
         return res.status(500).json({ message: "unable to connect to the DB" });
@@ -76,6 +86,22 @@ router.post('/', async (req, res) => {
     }
     catch (error) {
         return res.status(500).json({ message: "unable to connect to the DB" });
+    }
+});
+/**
+ * delete a book
+ */
+router.delete('/:isbn', async (req, res) => {
+    const isbn = req.params.isbn;
+    try {
+        const book = Book_1.Book.findOneAndDelete({ isbn: isbn });
+        if (!book) {
+            return res.status(404).json({ message: `Book with isbn ${isbn} was not found` });
+        }
+        return res.status(200).json("book deleted successfully");
+    }
+    catch (error) {
+        return res.status(500).json({ message: "unable to connect to the db" });
     }
 });
 exports.default = router;
