@@ -10,10 +10,16 @@ router.get('/', async (req: Request, res: Response) => {
     try {
         const page = parseInt( req.query.page as string) || 1;
         const limit = parseInt(req.query.limit as string) || 10;
-
         const skip = (page - 1) * limit; //how many items do I want to skip
 
-        const bookList = await Book.find().skip(skip).limit(limit);
+        const sortField = req.query.sort as string || 'title';
+        const sortOrder = req.query.order === 'desc' ? -1 : 1;
+
+
+        const bookList = await Book.find()
+            .sort({[sortField]: sortOrder})
+            .skip(skip)
+            .limit(limit);
         const totalBooks = await Book.countDocuments();
 
         return res.status(200).json({
