@@ -5,7 +5,11 @@ import {IBook} from "../Interfaces/Book";
 const BookSchema: Schema  = new mongoose.Schema({
     title: {type: String, required: true},
     subtitle: String,
-    isbn: {type: String, required: true},
+    isbn: {
+        type: String,
+        required: true,
+        unique: true
+    },
     numPages: Number,
     author: {type: String, required: true},
     publisher: String,
